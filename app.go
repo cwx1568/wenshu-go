@@ -17,11 +17,11 @@ import (
 	"time"
 )
 
-
+// 配置日志
 func init(){
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
-
+// mongodb docid collection
 var collection = func() *mongo.Collection {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://192.168.1.171:30000"))
@@ -32,6 +32,7 @@ var collection = func() *mongo.Collection {
 	return collection
 }()
 
+// 获取任务函数
 func getTask(finish chan bool, tasks chan string) {
 	t := time.Now().Unix()
 	for {
@@ -49,6 +50,7 @@ func getTask(finish chan bool, tasks chan string) {
 	finish <- true
 }
 
+// 请求详情
 func httpCreateContentJS(client *http.Client, docId string, cookie *string) string {
 	for {
 		url2 := "http://wenshu.court.gov.cn/CreateContentJS/CreateContentJS.aspx?DocID=" + docId
@@ -87,6 +89,7 @@ func httpCreateContentJS(client *http.Client, docId string, cookie *string) stri
 }
 var httpProxyClient = &http.Client{}
 
+// 获取代理
 func changeProxy(client *http.Client) {
 	s:=<-proxyPool
 	proxyUrl, _ := url.Parse("http://"+s)
@@ -94,7 +97,7 @@ func changeProxy(client *http.Client) {
 }
 
 
-
+// 解密js，获取cookie
 func httpIndex(client *http.Client) string {
 	resp, err := httpGet("http://wenshu.court.gov.cn/content/content?DocID=eff7f53c-b647-11e3-84e9-5cf3fc0c2c18&KeyWord=", client, "")
 	if err != nil {
@@ -144,7 +147,7 @@ func httpGet(url string, client *http.Client, cookie string) (*http.Response, er
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36")
 	return client.Do(req)
 }
-
+// 处理任务队列
 func processTask(tasks chan string, process chan struct{}) {
 	cookie := ""
 	client := &http.Client{
@@ -159,7 +162,7 @@ func processTask(tasks chan string, process chan struct{}) {
 	}
 	process <- struct{}{}
 }
-
+// 解密js，获取二级跳转url
 var decryptJs = func() string {
 	buf, _ := ioutil.ReadFile("decrypt.js")
 	return string(buf)
