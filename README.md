@@ -7,11 +7,10 @@
 ## 使用说明
 - 项目需要已采集过docid列表
 -  因私有代理不开源公布，项目需要自行实现getProxy 代理函数。
-替换你的http代理API URL
 ```
 func getProxy(){
 	for {
-		response, e := httpGet("替换你的http代理API",
+		response, e := httpGet("替换你的http代理API URL",
 			httpProxyClient, "")
 		if e== nil {
 			bytes, e := ioutil.ReadAll(response.Body)
