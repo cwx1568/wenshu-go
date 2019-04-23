@@ -7,19 +7,21 @@
 ## 使用说明
 - 项目需要已采集过docid列表
 -  因私有代理不开源公布，项目需要自行实现getProxy 代理函数。
-
+替换你的http代理API URL
 ```
 func getProxy(){
 	for {
-		response, e := httpGet("替换你的http代理API URL",
+		response, e := httpGet("替换你的http代理API",
 			httpProxyClient, "")
 		if e== nil {
-			bytes, _ := ioutil.ReadAll(response.Body)
-			log.Println("获取200个代理")
-			response.Body.Close()
-			result := strings.Split(strings.Trim(string(bytes),"\r\n"), "\r\n")
-			for _,v := range result {
-				proxyPool<-v
+			bytes, e := ioutil.ReadAll(response.Body)
+			if e==nil{
+				log.Println("获取200个代理")
+				response.Body.Close()
+				result := strings.Split(strings.Trim(string(bytes),"\r\n"), "\r\n")
+				for _,v := range result {
+					proxyPool<-v
+				}
 			}
 		}
 	}
