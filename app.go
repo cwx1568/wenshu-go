@@ -26,7 +26,7 @@ var collection = func() *mongo.Collection {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://192.168.1.171:30000"))
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 	collection := client.Database("wenshu").Collection("wenshu_2018")
 	return collection
@@ -57,29 +57,33 @@ func httpCreateContentJS(client *http.Client, docId string, cookie *string) stri
 		//log.Println("url2:"+url2)
 		response1, e := httpGet(url2, client, *cookie)
 		if e == nil {
-			bytes, _ := ioutil.ReadAll(response1.Body)
-			response1.Body.Close()
-			result := string(bytes)
-			if strings.Contains(result, "请开启JavaScript并刷新该页") {
-				*cookie = httpIndex(client)
-				if *cookie==""{
+			bytes, e := ioutil.ReadAll(response1.Body)
+			if e==nil{
+				response1.Body.Close()
+				result := string(bytes)
+				if strings.Contains(result, "请开启JavaScript并刷新该页") {
+					*cookie = httpIndex(client)
+					if *cookie==""{
+						changeProxy(client)
+					}
+				} else if strings.Contains(result, "//初始化全文插件") || strings.Contains(result, "此篇文书不存在") {
+					log.Println("更新docid:"+docId)
+					log.Println(result)
+					b := true
+					ctx, _ := context.WithTimeout(context.Background(), 20*time.Second)
+					_, e := collection.UpdateOne(ctx, bson.M{"_id": docId}, bson.M{"$set": bson.M{"html": result, "HasHtml": true}}, &options.UpdateOptions{Upsert: &b})
+					if e!= nil {
+						log.Println(e)
+					} else{
+						return result
+					}
+				} else {
+					log.Println("=========================================:"+result)
+					log.Println("重试")
 					changeProxy(client)
 				}
-			} else if strings.Contains(result, "//初始化全文插件") || strings.Contains(result, "此篇文书不存在") {
-				log.Println("更新docid:"+docId)
-				log.Println(result)
-				b := true
-				ctx, _ := context.WithTimeout(context.Background(), 20*time.Second)
-				_, e := collection.UpdateOne(ctx, bson.M{"_id": docId}, bson.M{"$set": bson.M{"html": result, "HasHtml": true}}, &options.UpdateOptions{Upsert: &b})
-				if e!= nil {
-					log.Println(e)
-				} else{
-					return result
-				}
 			} else {
-				log.Println("=========================================:"+result)
-				log.Println("重试")
-				changeProxy(client)
+				log.Println(e)
 			}
 		} else {
 			changeProxy(client)
